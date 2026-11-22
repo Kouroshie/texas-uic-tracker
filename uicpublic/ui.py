@@ -25,7 +25,7 @@ def _checks(stamp: str) -> dict:
         df = pd.read_parquet(pre)
         return {c.key: df[df["check"] == c.key].reset_index(drop=True) for c in checks.CHECKS}
     t = _tables(stamp)
-    as_of = pd.Timestamp.today().normalize()
+    as_of = data.snapshot_date(data.meta())
     return {c.key: c.run(t, as_of) for c in checks.CHECKS}
 
 

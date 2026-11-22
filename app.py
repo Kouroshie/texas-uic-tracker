@@ -22,7 +22,18 @@ def ensure_data() -> str:
             except Exception as e:
                 st.error(f"Could not download the data ({e}). Build it locally with `python build_data.py`.")
                 st.stop()
+    refresh_if_stale()
     return data.meta()["built"]
+
+
+@st.cache_resource(ttl=86400, show_spinner=False)
+def refresh_if_stale() -> None:
+    """At most once a day: a long-running server picks up the monthly rebuild."""
+    if data.stale(data.meta()):
+        try:
+            data.download()
+        except Exception:
+            pass  # keep the copy we have
 
 
 stamp = ensure_data()

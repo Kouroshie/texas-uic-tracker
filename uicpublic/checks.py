@@ -2,7 +2,7 @@
 
 Two kinds of result, kept apart everywhere in the app:
 - "RRC record": something the RRC itself recorded in its database (an enforcement action with no compliance date,
-  an H-10 violation with no resolved date, an H-10 not received after a second notice, an overdue H-5 schedule).
+  an H-10 violation with no resolved date, including the RRC's own 'delinquent H-10' violation code).
 - "Screen": something this tool computes by comparing reported numbers with permit numbers. A screen hit is a
   question to look into, not a finding of a violation. Data entry errors, amended permits and permit terms that are
   not in the public file all produce false hits.
@@ -57,9 +57,11 @@ def open_enforcement(t: dict, as_of: pd.Timestamp) -> pd.DataFrame:
     return _out(t["wells"], e, "open_enforcement")
 
 
-def open_h10_violations(t: dict, as_of: pd.Timestamp) -> pd.DataFrame:
+def open_h10_violations(t: dict, as_of: pd.Timestamp, years: int = 3) -> pd.DataFrame:
+    """Only the last `years` reporting years: a check of older ones against the RRC's online H-10 violation query
+    (2026-11) found them resolved there while the monthly file still showed them open."""
     v = t["h10_violations"]
-    v = v[v["resolved_date"].isna() & (v["code"] != "12")
+    v = v[v["resolved_date"].isna() & (v["code"] != "12") & (v["cycle_start"] // 100 >= as_of.year - years)
           & v["uic"].isin(t["wells"].loc[in_service(t["wells"]), "uic"])].copy()
     v["finding"] = "H-10 violation unresolved: " + v["code"].map(lambda c: codes.H10_VIOLATION.get(c, c))
     v["detail"] = ("Reporting year " + (v["cycle_start"] // 100).astype(str)
@@ -70,25 +72,12 @@ def open_h10_violations(t: dict, as_of: pd.Timestamp) -> pd.DataFrame:
     return _out(t["wells"], v, "open_h10_violations")
 
 
-def h10_second_notice(t: dict, as_of: pd.Timestamp) -> pd.DataFrame:
-    """The public file never fills the delinquent-notice date, so this uses the second notice: an H-10 was issued
-    for the current reporting year, a second notice followed, and no report is recorded as received since."""
-    w = t["wells"]
-    d = w[in_service(w) & w["issued"].notna() & w["second_notice"].notna() & (w["second_notice"] >= w["issued"])
-          & (w["received"].isna() | (w["received"] < w["issued"]))].copy()
-    d["finding"] = "H-10 annual report not received after a second notice"
-    d["detail"] = ("Reporting year " + d["h10_cycle_year"].astype("Int64").astype(str) + "; issued "
-                   + d["issued"].dt.strftime("%Y-%m-%d"))
-    d["since"] = d["second_notice"]
-    return _out(w, d[["uic", "finding", "detail", "since"]], "h10_second_notice")
-
-
-def h5_overdue(t: dict, as_of: pd.Timestamp) -> pd.DataFrame:
+def h5_overdue(t: dict, as_of: pd.Timestamp, grace_days: int = 30) -> pd.DataFrame:
     """Only each well's latest H-5 schedule counts: old schedules from the 1980s and 1990s were often never closed
     in the database even though a later test was filed."""
     w = t["wells"]
     h = t["h5"].sort_values(["due", "scheduled"], na_position="first").drop_duplicates("uic", keep="last")
-    h = h[h["scheduled_flag"].eq("Y") & h["due"].notna() & (h["due"] < as_of) & h["received"].isna()
+    h = h[h["scheduled_flag"].eq("Y") & h["due"].notna() & (h["due"] < as_of - pd.Timedelta(days=grace_days)) & h["received"].isna()
           & (h["test_date"].isna() | (h["test_date"] < h["scheduled"].fillna(h["due"])))]
     h = h[h["uic"].isin(w.loc[in_service(w), "uic"])].copy()
     h["finding"] = "Pressure test (H-5) past due"
@@ -133,9 +122,12 @@ def _recent(t: dict, months: int) -> pd.DataFrame:
     return m[_ym_to_date(m["ym"]) >= start] if start is not None else m.iloc[0:0]
 
 
-def pressure_over_permit(t: dict, as_of: pd.Timestamp, months: int = 24, tolerance: int = 0) -> pd.DataFrame:
+def pressure_over_permit(t: dict, as_of: pd.Timestamp, months: int = 24, tolerance: int = 100) -> pd.DataFrame:
+    """The limit is the higher of the two permitted pressures in the file (some permits list a second zone), and a
+    month counts only when it is more than `tolerance` psig over, as in the RRC's own H-10 violation code 07."""
     w = t["wells"]
-    lim = w[in_service(w) & (w["max_psi"] > 0)][["uic", "max_psi"]].rename(columns={"max_psi": "limit"})
+    lim = w[in_service(w)][["uic"]].assign(limit=w[["max_psi", "max_psi_2"]].max(axis=1))
+    lim = lim[lim["limit"] > 0]
     m = _recent(t, months).merge(lim, on="uic")
     m = m[m["max_psi"] > m["limit"] + tolerance]
     if m.empty:
@@ -228,20 +220,19 @@ def texnet_stale(t: dict, as_of: pd.Timestamp, days: int = 90) -> pd.DataFrame:
 CHECKS = [
     Check("open_enforcement", "Open enforcement actions", "RRC record",
           "Enforcement actions in the RRC's UIC database with no compliance date, on permits still in service.", open_enforcement),
-    Check("open_h10_violations", "Unresolved H-10 violations", "RRC record",
-          "Violations the RRC's H-10 system recorded on annual monitoring reports (since 09/2007) with no resolved "
-          "date, on permits still in service. Code 12 (well not required to file) is left out.", open_h10_violations),
-    Check("h10_second_notice", "H-10 not received after second notice", "RRC record",
-          "The RRC issued the H-10 annual report for the current reporting year, sent a second notice, and no report "
-          "is recorded as received.", h10_second_notice),
-    Check("h5_overdue", "Pressure tests (H-5) past due", "RRC record",
-          "The RRC scheduled a mechanical integrity test, the due date has passed, and no H-5 is recorded as "
-          "received.", h5_overdue),
-    Check("mit_failed", "Latest pressure test failed or inconclusive", "RRC record",
+    Check("open_h10_violations", "Unresolved H-10 violations", "Screen",
+          "H-10 violations in the RRC's monthly database file with no resolved date, for the last 3 reporting years, "
+          "on permits still in service (code 12, well not required to file, is left out). The RRC's online H-10 "
+          "violation query is the current record and may already show one resolved.", open_h10_violations),
+    Check("h5_overdue", "Pressure tests (H-5) past due", "Screen",
+          "The well's latest H-5 schedule is open, its due date is more than 30 days before the data snapshot, and "
+          "no H-5 is recorded as received. Read from the RRC's schedule fields; older open schedules are ignored.", h5_overdue),
+    Check("mit_failed", "Latest pressure test failed or inconclusive", "Screen",
           "The most recent H-5 test on file failed or was inconclusive and no later test passed.", mit_failed),
     Check("pressure_over_permit", "Pressure above permit", "Screen",
-          "A month on the H-10 where the reported maximum injection pressure is above the permitted maximum surface "
-          "pressure in the database. Permits with more than one zone or an amended limit can cause false hits.",
+          "A month on the H-10 where the reported maximum injection pressure is more than 100 psig above the permitted "
+          "maximum surface pressure (the higher of the two limits in the file, the same margin the RRC's H-10 "
+          "violation code 07 uses). Amended limits not yet in the file can cause false hits.",
           pressure_over_permit),
     Check("volume_over_permit", "Volume above permit", "Screen",
           "A month where the reported volume divided by the days in the month (the average daily rate) is above "

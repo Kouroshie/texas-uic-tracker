@@ -19,13 +19,15 @@ The data is rebuilt every month by a GitHub workflow and published with the sour
 RRC's UIC database manual (UIA010). Built {m['built']}.
 
 ### Two kinds of check result
-- **RRC record**: something the RRC recorded in its own database, such as an enforcement action with no compliance
-  date or an H-10 violation with no resolved date.
+- **RRC record**: something the RRC recorded in its own database file, such as an enforcement action with no
+  compliance date.
 - **Screen**: something this tool computes by comparing reported numbers with permit numbers. Treat it as a question,
   not a finding. Typing errors in reports, amended permits, multi-zone permits and permit terms that are not in the
   public file all produce false hits.
 
-Public data lags: H-10 reports are annual, and the database file is a monthly snapshot. Permit special conditions
+Public data lags: H-10 reports are annual, and the database file is a monthly snapshot, so checks run as of the date
+the RRC lists for that file ({m.get('checks_as_of', 'the file date')}). The RRC's online queries are the current record;
+for example, some H-10 violations still open in the file are shown resolved online. Permit special conditions
 are not in the public file, so this tool cannot check them.
 
 ### Checks

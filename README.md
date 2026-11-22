@@ -9,12 +9,13 @@ compliance problems, built only from public data.
 ## What it does
 
 - **Overview**: wells in the RRC's UIC database, permits in service, and how many wells each check flags, by district.
-- **Screening checks**: twelve checks in two kinds.
-  - *RRC record*: open enforcement actions, unresolved H-10 violations, H-10 reports not received after a second
-    notice, overdue H-5 pressure tests, and a latest pressure test that failed.
-  - *Screen*: reported pressure above the permitted maximum, average daily volume above the permitted maximum, no
-    passing pressure test in 5 years, no recent H-10 data, injection with no completion report, injection after
-    cancel or plugging, and gaps in TexNet daily reporting.
+- **Screening checks**: eleven checks in two kinds.
+  - *RRC record*: enforcement actions in the RRC's file with no compliance date.
+  - *Screen*: H-10 violations still open in the file (last 3 reporting years), H-5 pressure tests past due, a
+    latest pressure test that failed, reported pressure more than 100 psig above the permitted maximum, average daily
+    volume above the permitted maximum, no passing pressure test in 5 years, no recent H-10 data, injection with no
+    completion report, injection after cancel or plugging, and gaps in TexNet daily reporting.
+  - Checks run as of the date the RRC lists for its monthly file, not today's date.
 - **Well record**: permit limits, H-10 monthly pressure and volume charts against the permit, H-5 tests, H-10
   violations, enforcement actions and permit remarks for any UIC, API or lease number.
 - **Operators**: permits and check results per operator.

@@ -82,7 +82,7 @@ def build(raw: Path, out: Path, log=print) -> dict:
         log(f"  {name}: {len(df):,} rows, {(out / f'{name}.parquet').stat().st_size / 1e6:.1f} MB")
     log("Running the checks...")
     from uicpublic import checks, data
-    as_of = pd.Timestamp.today().normalize()
+    as_of = data.snapshot_date({"uic_database_listed": uic_listed})
     t2 = data.load(out)
     res = pd.concat([c.run(t2, as_of) for c in checks.CHECKS], ignore_index=True)
     res.to_parquet(out / "checks.parquet", index=False, compression="zstd")

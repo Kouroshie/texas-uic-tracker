@@ -66,3 +66,19 @@ def well_remarks(uic: str, folder: Path = DATA_DIR) -> pd.DataFrame:
         return pd.DataFrame(columns=["remark_no", "line_no", "text", "by", "date"])
     df = ds.dataset(path).to_table(filter=ds.field("uic") == uic).to_pandas()
     return df.sort_values(["remark_no", "line_no"])
+
+
+def snapshot_date(m: dict) -> pd.Timestamp:
+    """The date the RRC lists for its UIC file (for example '10/31/26 6:01:31 AM'). Checks are run as of this date,
+    since nothing later can be in the file."""
+    try:
+        return pd.to_datetime(m["uic_database_listed"].split()[0], format="%m/%d/%y")
+    except (KeyError, ValueError, AttributeError):
+        return pd.Timestamp.today().normalize()
+
+
+def stale(m: dict, days: int = 40) -> bool:
+    try:
+        return (pd.Timestamp.now(tz="UTC") - pd.Timestamp(m["built"].replace(" UTC", ""), tz="UTC")).days > days
+    except (KeyError, ValueError):
+        return False

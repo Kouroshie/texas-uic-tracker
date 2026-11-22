@@ -19,7 +19,7 @@ import pandas as pd
 UIC_LINK = "https://mft.rrc.texas.gov/link/d2438c05-b42f-45a8-b0c6-edceb0912767"
 P5_LINK = "https://mft.rrc.texas.gov/link/04652169-eed6-4396-9019-2e270e790f6c"
 TEXNET_WELLS = ("https://maps.texnet.beg.utexas.edu/arcgis/rest/services/injection/Injection/MapServer/0/query")
-USER_AGENT = "texas-uic-tracker (open-source; github.com/Kouroshie/texas-uic-tracker)"
+USER_AGENT = "texas-uic-tracker"
 
 
 def _opener():

@@ -58,7 +58,6 @@ def test_rrc_record_checks():
     t, as_of = tables(), pd.Timestamp("2026-11-01")
     assert checks.open_enforcement(t, as_of)["detail"].str.contains("Injection pressure").all()
     assert len(checks.open_h10_violations(t, as_of)) == 1
-    assert len(checks.h10_second_notice(t, as_of)) == 1
     assert len(checks.h5_overdue(t, as_of)) == 1
 
 
@@ -66,6 +65,7 @@ def test_screens():
     t, as_of = tables(), pd.Timestamp("2026-11-01")
     p = checks.pressure_over_permit(t, as_of)
     assert len(p) == 1 and "1700 psig vs permit 1500" in p["detail"].iloc[0]
+    assert checks.pressure_over_permit(t, as_of, tolerance=300).empty
     v = checks.volume_over_permit(t, as_of)  # Jan: 160,000 bbl / 31 days = 5,161 bbl/day > 5,000
     assert len(v) == 1 and v["detail"].iloc[0].startswith("1 month(s)")
     assert len(checks.mit_old(t, as_of)) == 1  # last passing test 2019
