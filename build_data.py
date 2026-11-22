@@ -63,6 +63,7 @@ def build(raw: Path, out: Path, log=print) -> dict:
     wells = wells.merge(last, left_on="uic_n", right_on="uic", how="left", suffixes=("", "_m")).drop(columns="uic_m")
 
     out.mkdir(parents=True, exist_ok=True)
+    _drop_old(out)
     tables = {
         "wells": wells.drop(columns="uic_n"),
         "h10_monthly": m.sort_values(["uic", "ym"]).astype({"uic": "int32", "ym": "int32", "avg_psi": "int32",
@@ -73,8 +74,7 @@ def build(raw: Path, out: Path, log=print) -> dict:
         "h5": t["h5"],
         "enforcement": t["enforcement"],
         "h10_violations": t["h10_violations"],
-        "remarks": t["remarks"],
-        "enforcement_remarks": t["enforcement_remarks"],
+        # Remarks are left out on purpose: the RRC's free-text notes include people's phone numbers and emails.
     }
     for name, df in tables.items():
         df.to_parquet(out / f"{name}.parquet", index=False, compression="zstd",
@@ -107,3 +107,8 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     raw = Path(args[args.index("--raw") + 1]) if "--raw" in args else ROOT / "raw"
     build(raw, ROOT / "data")
+
+
+def _drop_old(out: Path) -> None:
+    for name in ("remarks", "enforcement_remarks"):
+        (out / f"{name}.parquet").unlink(missing_ok=True)

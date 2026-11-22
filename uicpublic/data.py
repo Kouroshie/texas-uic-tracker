@@ -15,10 +15,10 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.environ.get("UIC_DATA_DIR", ROOT / "data"))
 DATA_URL = os.environ.get("UIC_DATA_URL",
                           "https://github.com/Kouroshie/texas-uic-tracker/releases/download/data/uic-data.zip")
-TABLES = ["wells", "h10_recent", "h5", "enforcement", "h10_violations", "enforcement_remarks"]
+TABLES = ["wells", "h10_recent", "h5", "enforcement", "h10_violations"]
 
 
-FILES = TABLES + ["h10_monthly", "h10_yearly", "remarks"]  # checks.parquet is optional
+FILES = TABLES + ["h10_monthly", "h10_yearly"]  # checks.parquet is optional
 
 
 def have_data(folder: Path = DATA_DIR) -> bool:
@@ -61,14 +61,6 @@ def well_months(uic: str, folder: Path = DATA_DIR) -> pd.DataFrame:
     df = d.to_table(filter=ds.field("uic") == int(uic)).to_pandas()
     df["month"] = pd.to_datetime(df["ym"].astype(str) + "01", format="%Y%m%d")
     return df.sort_values("month")
-
-
-def well_remarks(uic: str, folder: Path = DATA_DIR) -> pd.DataFrame:
-    path = folder / "remarks.parquet"
-    if not path.exists():
-        return pd.DataFrame(columns=["remark_no", "line_no", "text", "by", "date"])
-    df = ds.dataset(path).to_table(filter=ds.field("uic") == uic).to_pandas()
-    return df.sort_values(["remark_no", "line_no"])
 
 
 def snapshot_date(m: dict) -> pd.Timestamp:

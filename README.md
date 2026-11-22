@@ -19,7 +19,7 @@ compliance problems, built only from public data.
     completion report, injection after cancel or plugging, and gaps in TexNet daily reporting.
   - Checks run as of the date the RRC lists for its monthly file, not today's date.
 - **Well record**: permit limits, H-10 monthly pressure and volume charts against the permit, H-5 tests, H-10
-  violations, enforcement actions and permit remarks for any UIC, API or lease number.
+  violations and enforcement actions for any UIC, API or lease number.
 - **Operators**: permits and check results per operator.
 - Every list downloads as CSV or Excel.
 
@@ -27,7 +27,7 @@ compliance problems, built only from public data.
 
 | Source | Used for | Record layout |
 |---|---|---|
-| RRC [UIC Database](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#underground-injection-control-database) (ASCII, monthly) | permits, limits, H-10 monthly reports, H-5 tests, enforcement, H-10 violations, remarks | [Manual UIA010 (PDF)](https://www.rrc.texas.gov/media/v3onmigl/uic_manual_uia010_3116.pdf) |
+| RRC [UIC Database](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#underground-injection-control-database) (ASCII, monthly) | permits, limits, H-10 monthly reports, H-5 tests, enforcement, H-10 violations | [Manual UIA010 (PDF)](https://www.rrc.texas.gov/media/v3onmigl/uic_manual_uia010_3116.pdf) |
 | RRC [P-5 Organization](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#p5-organization) file (monthly) | operator names | [Manual ORA001 (PDF)](https://www.rrc.texas.gov/media/jtqfynn3/ora001_p5_manual_october-2014.pdf) |
 | [TexNet](https://injection.texnet.beg.utexas.edu/) injection wells (Bureau of Economic Geology) | daily injection reporting dates | [Public map service, wells layer](https://maps.texnet.beg.utexas.edu/arcgis/rest/services/injection/Injection/MapServer/0) |
 

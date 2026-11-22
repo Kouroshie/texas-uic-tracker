@@ -133,10 +133,3 @@ else:
     e["notice"] = e["notice"].map(lambda c: codes.label(codes.ENF_NOTICE, c))
     e["compliance_method"] = e["compliance_method"].map(lambda c: codes.label(codes.ENF_COMPLIANCE, c))
     st.dataframe(e.drop(columns=["uic"]), hide_index=True, width="stretch")
-    er = t["enforcement_remarks"][t["enforcement_remarks"]["uic"] == uic]
-    if not er.empty:
-        st.caption("Enforcement remarks: " + " | ".join(er["text"]))
-
-with st.expander("Permit remarks"):
-    rm = data.well_remarks(uic)
-    st.dataframe(rm.drop(columns=["uic"], errors="ignore"), hide_index=True, width="stretch")

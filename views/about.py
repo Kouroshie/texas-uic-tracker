@@ -11,7 +11,7 @@ Commission of Texas (RRC). It uses only public data and needs no login.
 ### Data sources
 | Source | What it gives | Record layout | Copy used |
 |---|---|---|---|
-| RRC [UIC Database](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#underground-injection-control-database) (ASCII, monthly) | Permits, permitted limits, H-10 annual monitoring reports by month, H-5 pressure tests, enforcement actions, H-10 violations, remarks | [Manual UIA010 (PDF)](https://www.rrc.texas.gov/media/v3onmigl/uic_manual_uia010_3116.pdf) | listed {m['uic_database_listed']} |
+| RRC [UIC Database](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#underground-injection-control-database) (ASCII, monthly) | Permits, permitted limits, H-10 annual monitoring reports by month, H-5 pressure tests, enforcement actions, H-10 violations | [Manual UIA010 (PDF)](https://www.rrc.texas.gov/media/v3onmigl/uic_manual_uia010_3116.pdf) | listed {m['uic_database_listed']} |
 | RRC [P-5 Organization](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#p5-organization) file (monthly) | Operator names and P-5 status | [Manual ORA001 (PDF)](https://www.rrc.texas.gov/media/jtqfynn3/ora001_p5_manual_october-2014.pdf) | listed {m['p5_listed']} |
 | [TexNet injection data](https://injection.texnet.beg.utexas.edu/), Bureau of Economic Geology | First and last day of daily injection reporting | [Public map service, wells layer](https://maps.texnet.beg.utexas.edu/arcgis/rest/services/injection/Injection/MapServer/0) | {m['texnet']} |
 
@@ -28,7 +28,8 @@ manuals linked above. Built {m['built']}.
 Public data lags: H-10 reports are annual, and the database file is a monthly snapshot, so checks run as of the date
 the RRC lists for that file ({m.get('checks_as_of', 'the file date')}). The RRC's online queries are the current record;
 for example, some H-10 violations still open in the file are shown resolved online. Permit special conditions
-are not in the public file, so this tool cannot check them.
+are not in the public file, so this tool cannot check them. The RRC's free-text remarks are left out because
+they include people's phone numbers and email addresses.
 
 ### Checks
 """)
