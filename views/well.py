@@ -2,13 +2,16 @@ import pandas as pd
 import streamlit as st
 
 from uicpublic import checks, codes, data, ui
+from uicpublic.help import TIP, page_help
 
 t = ui.get_tables()
 res = ui.get_checks()
 w = t["wells"]
 
 st.title("Well record")
-q = st.text_input("UIC number, API number (42-ccc-nnnnn or 8 digits), or lease number", key="well_query").strip()
+page_help("well")
+q = st.text_input("UIC number, API number (42-ccc-nnnnn or 8 digits), or lease number", key="well_query",
+                  help=TIP["well_query"]).strip()
 if not q:
     st.write("Enter a number above, or click a row on the Screening checks page.")
     st.stop()
@@ -38,12 +41,14 @@ status = "Cancelled " + d(r["cancelled"]) if pd.notna(r["cancelled"]) else (
     "Plugged (W-3) " + d(r["w3_date"]) if pd.notna(r["w3_date"]) else "In service")
 st.subheader(f"UIC {uic}: {r['operator']}, lease {r['lease']} well {r['well_no']}")
 c = st.columns(4)
-c[0].metric("Permit", status)
-c[1].metric("Latest H-10 status", codes.WELL_STATUS.get(str(r.get("h10_status") or ""), "None on file"))
-c[2].metric("Max surface pressure (permit)", f"{int(r['max_psi']):,} psig" if r["max_psi"] else "Not in file")
+c[0].metric("Permit", status, help=TIP["permit"])
+c[1].metric("Latest H-10 status", codes.WELL_STATUS.get(str(r.get("h10_status") or ""), "None on file"),
+            help=TIP["h10_status"])
+c[2].metric("Max surface pressure (permit)", f"{int(r['max_psi']):,} psig" if r["max_psi"] else "Not in file",
+            help=TIP["max_psi"])
 c[3].metric("Max daily volume (permit)", " / ".join(x for x in (
     f"{int(r['max_bbl_day']):,} bbl" if r["max_bbl_day"] else "", f"{int(r['max_mcf_day']):,} Mcf"
-    if r["max_mcf_day"] else "") if x) or "Not in file")
+    if r["max_mcf_day"] else "") if x) or "Not in file", help=TIP["max_vol"])
 
 info = {
     "API": r["api"], "District": r["district"], "County": r["county"], "Oil or gas lease": r["oil_gas"],
@@ -69,19 +74,21 @@ st.caption(f"Check the RRC's own records: [Injection-Storage Permit Query]({ui.R
 
 hits = pd.concat([res[k][res[k]["uic"] == uic].assign(check=checks.BY_KEY[k].title + f" ({checks.BY_KEY[k].kind})")
                   for k in res], ignore_index=True)
-st.subheader("Check results")
+st.subheader("Check results", help=TIP["well_checks"])
 if hits.empty:
     st.success("No check results for this well.")
 else:
     st.dataframe(hits[["check", "finding", "detail", "since"]], hide_index=True, width="stretch",
                  column_config={"since": st.column_config.DateColumn("Since", format="YYYY-MM-DD")})
 
-st.subheader("H-10 monthly injection")
+st.subheader("H-10 monthly injection", help=TIP["h10_chart"])
 m = data.well_months(uic)
 if m.empty:
     st.write("No H-10 monthly data on file.")
 else:
-    yrs = st.slider("Years shown", 1, max(1, int(m["month"].dt.year.nunique())), min(10, m["month"].dt.year.nunique()))
+    yrs = st.slider("Years shown", 1, max(1, int(m["month"].dt.year.nunique())), min(10, m["month"].dt.year.nunique()),
+                    help=TIP["years_shown"])
+    st.caption(f"H-10 data on file for this well: {m['month'].min():%Y-%m} to {m['month'].max():%Y-%m}.")
     m = m[m["month"] >= m["month"].max() - pd.DateOffset(years=yrs)]
     p = m.set_index("month")[["max_psi", "avg_psi"]].rename(columns={"max_psi": "Max psig", "avg_psi": "Avg psig"})
     if r["max_psi"]:
@@ -102,7 +109,7 @@ else:
         st.dataframe(m[["month", "avg_psi", "max_psi", "bbl", "mcf"]].sort_values("month", ascending=False),
                      hide_index=True, column_config={"month": st.column_config.DateColumn("Month", format="YYYY-MM")})
 
-st.subheader("Pressure tests (H-5)")
+st.subheader("Pressure tests (H-5)", help=TIP["h5"])
 h = t["h5"][t["h5"]["uic"] == uic].copy()
 if h.empty:
     st.write("None on file.")
@@ -114,7 +121,7 @@ else:
     st.dataframe(h.drop(columns=["uic", "alt_test"]).sort_values("due", ascending=False), hide_index=True,
                  width="stretch")
 
-st.subheader("H-10 violations")
+st.subheader("H-10 violations", help=TIP["h10_violations"])
 v = t["h10_violations"][t["h10_violations"]["uic"] == uic].copy()
 if v.empty:
     st.write("None on file.")
@@ -124,7 +131,7 @@ else:
     st.dataframe(v.drop(columns=["uic"]).sort_values("cycle_start", ascending=False), hide_index=True,
                  width="stretch")
 
-st.subheader("Enforcement actions")
+st.subheader("Enforcement actions", help=TIP["enforcement"])
 e = t["enforcement"][t["enforcement"]["uic"] == uic].copy()
 if e.empty:
     st.write("None on file.")

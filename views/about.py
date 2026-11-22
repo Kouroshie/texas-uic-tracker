@@ -1,9 +1,11 @@
 import streamlit as st
 
-from uicpublic import checks, data
+from uicpublic import checks, data, ui
+from uicpublic.help import check_window, coverage, page_help
 
 m = data.meta()
 st.title("About and methods")
+page_help("about")
 st.markdown(f"""
 **Texas UIC Tracker** is an unofficial, open-source tool. It is not affiliated with or endorsed by the Railroad
 Commission of Texas (RRC). It uses only public data and needs no login.
@@ -18,6 +20,11 @@ Commission of Texas (RRC). It uses only public data and needs no login.
 The data is rebuilt every month by a GitHub workflow and published with the source code. Record layouts follow the
 manuals linked above. Built {m['built']}.
 
+""")
+st.markdown("### What years the data covers", help="First and last year with real records in each data set. A few typing-error dates in the RRC file (for example 1900 or 2098) are ignored.")
+st.dataframe(coverage(st.session_state["stamp"]), hide_index=True, width="stretch",
+             column_config={"What": st.column_config.TextColumn(width="large")})
+st.markdown(f"""
 ### Two kinds of check result
 - **RRC record**: something the RRC recorded in its own database file, such as an enforcement action with no
   compliance date.
@@ -33,8 +40,9 @@ they include people's phone numbers and email addresses.
 
 ### Checks
 """)
+as_of = data.snapshot_date(m)
 for c in checks.CHECKS:
-    st.markdown(f"- **{c.title}** ({c.kind}): {c.explain}")
+    st.markdown(f"- **{c.title}** ({c.kind}): {c.explain} *Dates looked at: {check_window(c.key, ui.get_tables(), as_of)}*")
 st.markdown("""
 ### Verify before acting
 Confirm anything here against the RRC's own systems: the

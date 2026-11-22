@@ -1,21 +1,24 @@
 import pandas as pd
 import streamlit as st
 
-from uicpublic import checks, ui
+from uicpublic import checks, data, ui
+from uicpublic.help import TIP, check_window, page_help
 
 res = ui.get_checks()
 
 st.title("Screening checks")
 st.write("Pick a check. Click a row to open that well's record. Use the filters to narrow to a district, county or "
          "operator, then download the list.")
+page_help("checks")
 
 labels = {c.key: f"{c.title}  ({res[c.key]['uic'].nunique():,} wells, {c.kind})" for c in checks.CHECKS}
-key = st.selectbox("Check", list(labels), format_func=labels.get, key="check")
+key = st.selectbox("Check", list(labels), format_func=labels.get, key="check", help=TIP["check_pick"])
 chk = checks.BY_KEY[key]
+window = check_window(key, ui.get_tables(), data.snapshot_date(data.meta()))
 if chk.kind == "Screen":
-    st.warning(f"**Screen.** {chk.explain}", icon=":material/troubleshoot:")
+    st.warning(f"**Screen.** {chk.explain}  \n**Dates looked at:** {window}", icon=":material/troubleshoot:")
 else:
-    st.info(f"**RRC record.** {chk.explain}", icon=":material/fact_check:")
+    st.info(f"**RRC record.** {chk.explain}  \n**Dates looked at:** {window}", icon=":material/fact_check:")
 
 df = ui.filters(res[key], key)
 st.caption(f"{len(df):,} rows, {df['uic'].nunique():,} wells, {df['operator_no'].nunique():,} operators")

@@ -6,6 +6,8 @@ import io
 import pandas as pd
 import streamlit as st
 
+from .help import TIP as _TIP  # noqa: E402
+
 RRC_PERMIT_QUERY = "https://webapps2.rrc.texas.gov/EWA/uicQueryAction.do"
 RRC_H10_QUERY = "https://webapps.rrc.texas.gov/H10/searchH10.do"
 
@@ -40,9 +42,11 @@ def get_checks() -> dict:
 def filters(df: pd.DataFrame, key: str) -> pd.DataFrame:
     """District, county and operator filters above a table."""
     c1, c2, c3 = st.columns(3)
-    dist = c1.multiselect("District", sorted(x for x in df["district"].dropna().unique() if x), key=f"{key}_d")
-    cnty = c2.multiselect("County", sorted(x for x in df["county"].dropna().unique() if x), key=f"{key}_c")
-    oper = c3.text_input("Operator name or number contains", key=f"{key}_o").strip().upper()
+    dist = c1.multiselect("District", sorted(x for x in df["district"].dropna().unique() if x), key=f"{key}_d",
+                          help="RRC oil and gas district (01 to 10, 6E, 7B, 7C, 8A). " + _TIP["filters"])
+    cnty = c2.multiselect("County", sorted(x for x in df["county"].dropna().unique() if x), key=f"{key}_c",
+                          help="County of the well. " + _TIP["filters"])
+    oper = c3.text_input("Operator name or number contains", key=f"{key}_o", help=_TIP["operator_text"]).strip().upper()
     if dist:
         df = df[df["district"].isin(dist)]
     if cnty:
@@ -70,7 +74,8 @@ def downloads(df: pd.DataFrame, name: str) -> None:
 def well_table(df: pd.DataFrame, key: str) -> None:
     """A table whose rows open the well record when clicked."""
     ev = st.dataframe(df, hide_index=True, width="stretch", on_select="rerun", selection_mode="single-row",
-                      key=key, column_config={"since": st.column_config.DateColumn("Since", format="YYYY-MM-DD")})
+                      key=key, column_config={"since": st.column_config.DateColumn("Since", format="YYYY-MM-DD", help=_TIP["since"]),
+                                     "uic": st.column_config.TextColumn("uic", help="UIC permit number. Click the row to open the well.")})
     rows = ev.selection.rows if ev and ev.selection else []
     if rows:
         st.session_state["well_query"] = df.iloc[rows[0]]["uic"]
