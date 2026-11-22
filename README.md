@@ -25,13 +25,13 @@ compliance problems, built only from public data.
 
 ## Data
 
-| Source | Used for |
-|---|---|
-| RRC [UIC Database](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) (ASCII, monthly) | permits, limits, H-10 monthly reports, H-5 tests, enforcement, H-10 violations, remarks |
-| RRC [P-5 Organization](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#p5-organization) file (monthly) | operator names |
-| [TexNet](https://injection.texnet.beg.utexas.edu/) injection wells (Bureau of Economic Geology, public ArcGIS service) | daily injection reporting dates |
+| Source | Used for | Record layout |
+|---|---|---|
+| RRC [UIC Database](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#underground-injection-control-database) (ASCII, monthly) | permits, limits, H-10 monthly reports, H-5 tests, enforcement, H-10 violations, remarks | [Manual UIA010 (PDF)](https://www.rrc.texas.gov/media/v3onmigl/uic_manual_uia010_3116.pdf) |
+| RRC [P-5 Organization](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#p5-organization) file (monthly) | operator names | [Manual ORA001 (PDF)](https://www.rrc.texas.gov/media/jtqfynn3/ora001_p5_manual_october-2014.pdf) |
+| [TexNet](https://injection.texnet.beg.utexas.edu/) injection wells (Bureau of Economic Geology) | daily injection reporting dates | [Public map service, wells layer](https://maps.texnet.beg.utexas.edu/arcgis/rest/services/injection/Injection/MapServer/0) |
 
-No logins or keys. The record layouts follow the RRC's UIC database manual (UIA010). Permit special conditions
+No logins or keys. Permit special conditions
 are not in the public file, so they are not checked.
 
 A GitHub workflow (`.github/workflows/data.yml`) rebuilds the data on the 6th of every month and publishes it as
