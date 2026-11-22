@@ -28,3 +28,12 @@ jobs:
           gh release view data >/dev/null 2>&1 || gh release create data --title "Prebuilt data" --notes "Rebuilt monthly from public RRC and TexNet data by the Monthly data build workflow."
           gh release upload data uic-data.zip --clobber
           gh release edit data --notes "Rebuilt monthly from public RRC and TexNet data. Latest build: $(python -c "import json;m=json.load(open('data/meta.json'));print(m['built'], '| RRC UIC file listed', m['uic_database_listed'])")"
+      - name: Record the build in the repository
+        # A commit each month keeps the repository active; GitHub turns off scheduled workflows after 60 days without one.
+        run: |
+          cp data/meta.json DATA_VERSION.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add DATA_VERSION.json
+          git diff --cached --quiet || git commit -m "Data build $(date -u +%Y-%m-%d)"
+          git push

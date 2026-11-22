@@ -27,8 +27,9 @@ class Check:
 
 
 def in_service(w: pd.DataFrame) -> pd.Series:
-    """Permit not cancelled and no plugging report (W-3) on file."""
-    return w["cancelled"].isna() & w["w3_date"].isna()
+    """Permit not cancelled, no plugging report (W-3) on file, and the latest H-10 does not say the well was
+    converted back to production, cancelled, plugged or suspended (status 5 to 8)."""
+    return w["cancelled"].isna() & w["w3_date"].isna() & ~w["h10_status"].isin(["5", "6", "7", "8"])
 
 
 def _ym_to_date(ym: pd.Series) -> pd.Series:
@@ -45,9 +46,9 @@ def _out(w: pd.DataFrame, hits: pd.DataFrame, check: str) -> pd.DataFrame:
     return df[cols + ["finding", "detail", "since", "check"]].sort_values(["district", "operator", "uic"])
 
 
-def open_enforcement(t: dict, as_of: pd.Timestamp) -> pd.DataFrame:
+def open_enforcement(t: dict, as_of: pd.Timestamp, years: int = 10) -> pd.DataFrame:
     e = t["enforcement"]
-    e = e[e["compliance_date"].isna() & e["notice_date"].notna()
+    e = e[e["compliance_date"].isna() & (e["notice_date"] >= as_of - pd.DateOffset(years=years))
           & e["uic"].isin(t["wells"].loc[in_service(t["wells"]), "uic"])].copy()
     e["finding"] = "Enforcement action open: " + e["notice"].map(lambda c: codes.ENF_NOTICE.get(c, c))
     e["detail"] = ("Violation: " + e["violation"].map(lambda c: codes.ENF_VIOLATION.get(c, c))
@@ -77,7 +78,8 @@ def h5_overdue(t: dict, as_of: pd.Timestamp, grace_days: int = 30) -> pd.DataFra
     in the database even though a later test was filed."""
     w = t["wells"]
     h = t["h5"].sort_values(["due", "scheduled"], na_position="first").drop_duplicates("uic", keep="last")
-    h = h[h["scheduled_flag"].eq("Y") & h["due"].notna() & (h["due"] < as_of - pd.Timedelta(days=grace_days)) & h["received"].isna()
+    h = h[h["scheduled_flag"].eq("Y") & h["due"].notna() & (h["due"] < as_of - pd.Timedelta(days=grace_days))
+          & (h["due"] >= as_of - pd.DateOffset(years=10)) & h["received"].isna()
           & (h["test_date"].isna() | (h["test_date"] < h["scheduled"].fillna(h["due"])))]
     h = h[h["uic"].isin(w.loc[in_service(w), "uic"])].copy()
     h["finding"] = "Pressure test (H-5) past due"
@@ -219,20 +221,22 @@ def texnet_stale(t: dict, as_of: pd.Timestamp, days: int = 90) -> pd.DataFrame:
 
 CHECKS = [
     Check("open_enforcement", "Open enforcement actions", "RRC record",
-          "Enforcement actions in the RRC's UIC database with no compliance date, on permits still in service.", open_enforcement),
+          "Enforcement actions from the last 10 years in the RRC's UIC database with no compliance date, on permits "
+          "still in service. The action may date from an earlier operator of the well.", open_enforcement),
     Check("open_h10_violations", "Unresolved H-10 violations", "Screen",
           "H-10 violations in the RRC's monthly database file with no resolved date, for the last 3 reporting years, "
           "on permits still in service (code 12, well not required to file, is left out). The RRC's online H-10 "
           "violation query is the current record and may already show one resolved.", open_h10_violations),
     Check("h5_overdue", "Pressure tests (H-5) past due", "Screen",
           "The well's latest H-5 schedule is open, its due date is more than 30 days before the data snapshot, and "
-          "no H-5 is recorded as received. Read from the RRC's schedule fields; older open schedules are ignored.", h5_overdue),
+          "no H-5 is recorded as received. Read from the RRC's schedule fields; schedules due more than 10 years ago "
+          "are ignored.", h5_overdue),
     Check("mit_failed", "Latest pressure test failed or inconclusive", "Screen",
           "The most recent H-5 test on file failed or was inconclusive and no later test passed.", mit_failed),
     Check("pressure_over_permit", "Pressure above permit", "Screen",
           "A month on the H-10 where the reported maximum injection pressure is more than 100 psig above the permitted "
-          "maximum surface pressure (the higher of the two limits in the file, the same margin the RRC's H-10 "
-          "violation code 07 uses). Amended limits not yet in the file can cause false hits.",
+          "maximum (the liquid limit, or the gas limit when that is higher; the same 100 psig margin the RRC's "
+          "H-10 violation code 07 uses). Amended limits not yet in the file can cause false hits.",
           pressure_over_permit),
     Check("volume_over_permit", "Volume above permit", "Screen",
           "A month where the reported volume divided by the days in the month (the average daily rate) is above "

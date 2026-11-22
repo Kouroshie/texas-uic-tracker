@@ -15,7 +15,7 @@ st.write("Injection, disposal and storage wells permitted by the Railroad Commis
 
 c = st.columns(4)
 c[0].metric("Wells in the database", f"{len(w):,}")
-c[1].metric("Permits in service", f"{len(svc):,}", help="Not cancelled and no plugging report (W-3) on file.")
+c[1].metric("Permits in service", f"{len(svc):,}", help="Not cancelled, no plugging report (W-3), and not reported converted, cancelled, plugged or suspended on the latest H-10.")
 c[2].metric("Reported active on latest H-10", f"{int(svc['h10_status'].eq('3').sum()):,}")
 c[3].metric("Wells with any check result", f"{pd.concat([r['uic'] for r in res.values()]).nunique():,}")
 
