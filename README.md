@@ -50,7 +50,11 @@ python build_data.py
 
 Tests: `python -m pytest`
 
-## Deploy
+## Live app
+
+https://kouroshie-texas-uic-tracker-app-1zchb4.streamlit.app
+
+## Deploy your own copy
 
 On [Streamlit Community Cloud](https://share.streamlit.io): New app, pick this repository, main file `app.py`.
 
