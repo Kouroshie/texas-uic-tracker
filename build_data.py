@@ -27,6 +27,11 @@ def recent_start(last_ym: int, months: int = 36) -> int:
     return (n // 12) * 100 + n % 12 + 1
 
 
+def _drop_old(out: Path) -> None:
+    for name in ("remarks", "enforcement_remarks"):
+        (out / f"{name}.parquet").unlink(missing_ok=True)
+
+
 def build(raw: Path, out: Path, log=print) -> dict:
     t0 = time.time()
     uic_file, uic_listed = sources.godrive_download(sources.UIC_LINK, "uif700a.txt.gz", raw, log=log)
@@ -107,8 +112,3 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     raw = Path(args[args.index("--raw") + 1]) if "--raw" in args else ROOT / "raw"
     build(raw, ROOT / "data")
-
-
-def _drop_old(out: Path) -> None:
-    for name in ("remarks", "enforcement_remarks"):
-        (out / f"{name}.parquet").unlink(missing_ok=True)
