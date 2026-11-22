@@ -3,6 +3,8 @@
 An open-source web app for looking up Texas injection, disposal and storage wells and screening them for possible
 compliance problems, built only from public data.
 
+**Open the app:** https://kouroshie-texas-uic-tracker-app-1zchb4.streamlit.app
+
 > **Unofficial.** Not affiliated with or endorsed by the Railroad Commission of Texas (RRC). Results marked
 > *Screen* are prompts to look closer, not findings of a violation. Check the RRC's own records before acting.
 
@@ -49,14 +51,6 @@ python build_data.py
 ```
 
 Tests: `python -m pytest`
-
-## Live app
-
-https://kouroshie-texas-uic-tracker-app-1zchb4.streamlit.app
-
-## Deploy your own copy
-
-On [Streamlit Community Cloud](https://share.streamlit.io): New app, pick this repository, main file `app.py`.
 
 ## License
 
