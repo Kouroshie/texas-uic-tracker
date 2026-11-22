@@ -1,0 +1,30 @@
+name: Monthly data build
+
+on:
+  schedule:
+    - cron: "0 12 6 * *"   # the 6th of each month; the RRC posts the UIC file by the 3rd workday
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pytest
+      - run: python -m pytest -q
+      - run: python build_data.py
+      - name: Publish the data as the "data" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd data && zip -q ../uic-data.zip *.parquet meta.json && cd ..
+          gh release view data >/dev/null 2>&1 || gh release create data --title "Prebuilt data" --notes "Rebuilt monthly from public RRC and TexNet data by the Monthly data build workflow."
+          gh release upload data uic-data.zip --clobber
+          gh release edit data --notes "Rebuilt monthly from public RRC and TexNet data. Latest build: $(python -c "import json;m=json.load(open('data/meta.json'));print(m['built'], '| RRC UIC file listed', m['uic_database_listed'])")"
