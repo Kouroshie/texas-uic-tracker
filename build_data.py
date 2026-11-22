@@ -80,6 +80,7 @@ def build(raw: Path, out: Path, log=print) -> dict:
         df.to_parquet(out / f"{name}.parquet", index=False, compression="zstd",
                       row_group_size=500_000 if name == "h10_monthly" else None)
         log(f"  {name}: {len(df):,} rows, {(out / f'{name}.parquet').stat().st_size / 1e6:.1f} MB")
+    per_month = m.groupby("ym").size()
     log("Running the checks...")
     from uicpublic import checks, data
     as_of = data.snapshot_date({"uic_database_listed": uic_listed})
@@ -93,7 +94,8 @@ def build(raw: Path, out: Path, log=print) -> dict:
         "uic_database_listed": uic_listed,
         "p5_listed": p5_listed,
         "texnet": texnet_note,
-        "latest_h10_month": int(m["ym"].max()) if len(m) else None,
+        # The latest month with a real share of reports (a few reports arrive early for the current month).
+        "latest_h10_month": int(per_month[per_month >= 0.01 * per_month.max()].index.max()) if len(m) else None,
         "wells": int(len(wells)),
     }
     (out / "meta.json").write_text(json.dumps(meta, indent=2))

@@ -49,6 +49,9 @@ def load(folder: Path = DATA_DIR) -> dict[str, pd.DataFrame]:
     w = t["wells"]
     w["operator"] = w["operator"].fillna("(operator " + w["operator_no"] + ")")
     w["district"] = w["district"].fillna("")
+    for c in ("inj_type_comment", "fluid_comment", "location", "special_conditions_note", "h10_status_comment"):
+        if c in w:  # data built before zero-filled text was cleaned
+            w[c] = w[c].fillna("").where(w[c].fillna("").str.strip("0 ") != "", "")
     return t
 
 

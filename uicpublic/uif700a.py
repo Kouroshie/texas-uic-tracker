@@ -27,6 +27,12 @@ def _s(line: str, a: int, b: int) -> str:
     return line[a:b].strip()
 
 
+def _t(line: str, a: int, b: int) -> str:
+    """Free text; empty fields are stored as zeros in some records."""
+    v = line[a:b].strip()
+    return "" if not v.strip("0") else v
+
+
 def _i(line: str, a: int, b: int) -> int:
     v = line[a:b].strip()
     return int(v) if v.isdigit() else 0
@@ -149,8 +155,8 @@ def _root(line: str) -> dict:
         "w2g1_date": _d(line, 98, 106),
         "w3_date": _d(line, 106, 114),
         "inj_type": _s(line, 114, 115),
-        "inj_type_comment": _s(line, 115, 145),
-        "fluid_comment": _s(line, 145, 175),
+        "inj_type_comment": _t(line, 115, 145),
+        "fluid_comment": _t(line, 145, 175),
         "max_bbl_day": _i(line, 175, 184),
         "max_mcf_day": _i(line, 184, 193),
         "top_ft": _i(line, 193, 198),
@@ -159,8 +165,8 @@ def _root(line: str) -> dict:
         "h1_no": _s(line, 208, 213),
         "w14_no": _s(line, 213, 218),
         "max_psi_2": _i(line, 232, 237),
-        "location": _s(line, 364, 416),
-        "special_conditions_note": _s(line, 520, 548),
+        "location": _t(line, 364, 416),
+        "special_conditions_note": _t(line, 520, 548),
         "docket": f"{_s(line, 559, 561)}-{_s(line, 563, 568)}" if _s(line, 563, 568).strip("0") else "",
     }
 
@@ -170,7 +176,7 @@ def _monitor(uic: str, line: str) -> dict:
     return {
         "uic": uic,
         "h10_status": _s(line, 2, 3),
-        "h10_status_comment": _s(line, 209, 229),
+        "h10_status_comment": _t(line, 209, 229),
         "h10_cycle_year": int(cc) if cc.isdigit() and int(cc) > 1900 else None,
         "h10_due_month": _i(line, 253, 255) or None,
         "h10_on_hold": line[73:74] == "Y",
