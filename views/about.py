@@ -12,7 +12,7 @@ Commission of Texas (RRC). It uses only public data and needs no login.
 | Source | What it gives | Copy used |
 |---|---|---|
 | RRC [UIC Database](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) (ASCII, monthly) | Permits, permitted limits, H-10 annual monitoring reports by month, H-5 pressure tests, enforcement actions, H-10 violations, remarks | listed {m['uic_database_listed']} |
-| RRC P-5 Organization file (monthly) | Operator names and P-5 status | listed {m['p5_listed']} |
+| RRC [P-5 Organization](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/#p5-organization) file (monthly) | Operator names and P-5 status | listed {m['p5_listed']} |
 | [TexNet injection data](https://injection.texnet.beg.utexas.edu/), Bureau of Economic Geology | First and last day of daily injection reporting | {m['texnet']} |
 
 The data is rebuilt every month by a GitHub workflow and published with the source code. Record layouts follow the
