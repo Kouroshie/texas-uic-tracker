@@ -28,9 +28,22 @@ def _opener():
     return op
 
 
-def godrive_download(link: str, name: str, dest: Path, log=print, timeout: int = 300) -> tuple[Path, str]:
-    """Download one file from an RRC GoDrive link page. Returns (path, the date the page lists). Skips the
-    download when the same listed date was downloaded before."""
+def godrive_download(link: str, name: str, dest: Path, log=print, timeout: int = 300,
+                     tries: int = 4) -> tuple[Path, str]:
+    """Download one file from an RRC GoDrive link page, retrying dropped connections. Returns (path, the date the
+    page lists). Skips the download when the same listed date was downloaded before."""
+    import time
+    for attempt in range(1, tries + 1):
+        try:
+            return _godrive_once(link, name, dest, log, timeout)
+        except OSError as e:  # URLError and SSL errors from the RRC server are OSErrors
+            if attempt == tries:
+                raise
+            log(f"{name}: attempt {attempt} failed ({e}); retrying in {60 * attempt} s")
+            time.sleep(60 * attempt)
+
+
+def _godrive_once(link: str, name: str, dest: Path, log, timeout: int) -> tuple[Path, str]:
     dest.mkdir(parents=True, exist_ok=True)
     op = _opener()
     page = op.open(link, timeout=timeout).read().decode("utf-8", "replace")
