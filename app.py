@@ -26,9 +26,9 @@ def ensure_data() -> str:
     return data.meta()["built"]
 
 
-@st.cache_resource(ttl=86400, show_spinner=False)
+@st.cache_resource(ttl=3600, show_spinner=False)
 def refresh_if_stale() -> None:
-    """At most once a day: a long-running server picks up the monthly rebuild."""
+    """At most once an hour: picks up a new data release (DATA_VERSION.json changed) or a copy over 40 days old."""
     if data.stale(data.meta()):
         try:
             data.download()

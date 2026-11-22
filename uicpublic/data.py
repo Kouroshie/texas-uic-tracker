@@ -32,6 +32,19 @@ def download(folder: Path = DATA_DIR, url: str = DATA_URL) -> None:
     folder.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(io.BytesIO(blob)) as z:
         z.extractall(folder)
+        keep = set(z.namelist())
+    for f in folder.glob("*.parquet"):  # files dropped from the release (for example the old remarks tables)
+        if f.name not in keep:
+            f.unlink()
+
+
+def published_built() -> str | None:
+    """The build stamp of the newest data release, from DATA_VERSION.json in the repository (updated with every
+    release). The app compares it with its own copy and downloads again when they differ."""
+    try:
+        return json.loads((ROOT / "DATA_VERSION.json").read_text())["built"]
+    except (OSError, ValueError, KeyError):
+        return None
 
 
 def meta(folder: Path = DATA_DIR) -> dict:
@@ -73,6 +86,9 @@ def snapshot_date(m: dict) -> pd.Timestamp:
 
 
 def stale(m: dict, days: int = 40) -> bool:
+    pub = published_built()
+    if pub and pub != m.get("built"):
+        return True
     try:
         return (pd.Timestamp.now(tz="UTC") - pd.Timestamp(m["built"].replace(" UTC", ""), tz="UTC")).days > days
     except (KeyError, ValueError):

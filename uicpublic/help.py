@@ -160,10 +160,11 @@ def coverage(stamp: str) -> pd.DataFrame:
 
 def check_window(key: str, t: dict, as_of: pd.Timestamp) -> str:
     """The dates a check looks at, in words."""
-    ym = int(t["h10_recent"]["ym"].max()) if len(t["h10_recent"]) else 0
+    from .checks import last_month
+    ym = last_month(t, as_of)
     last = pd.Timestamp(year=ym // 100, month=ym % 100, day=1) if ym else as_of
     start24 = last - pd.DateOffset(months=23)
-    h10_24 = f"H-10 months {start24:%Y-%m} to {last:%Y-%m} (the latest 24 months on file)"
+    h10_24 = f"H-10 months {start24:%Y-%m} to {last:%Y-%m} (the latest 24 months on file up to the RRC file date)"
     d = lambda x: f"{x:%Y-%m-%d}"  # noqa: E731
     return {
         "open_enforcement": f"Enforcement notices dated {d(as_of - pd.DateOffset(years=10))} to {d(as_of)}.",

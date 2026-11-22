@@ -117,11 +117,23 @@ def mit_old(t: dict, as_of: pd.Timestamp, years: int = 5) -> pd.DataFrame:
     return _out(w, df, "mit_old")
 
 
-def _recent(t: dict, months: int) -> pd.DataFrame:
+def last_month(t: dict, as_of: pd.Timestamp) -> int:
+    """The latest H-10 month (YYYYMM) the checks use: the newest month on file that had ended by the RRC file date.
+    The file holds a few rows for later months (filed early or typed with the wrong month); they are ignored."""
+    p = (as_of + pd.Timedelta(days=1)).to_period("M") - 1  # last month that had fully ended
+    cap = p.year * 100 + p.month
+    ym = t["h10_recent"]["ym"]
+    ym = ym[ym <= cap]
+    return int(ym.max()) if len(ym) else 0
+
+
+def _recent(t: dict, months: int, as_of: pd.Timestamp) -> pd.DataFrame:
     m = t["h10_recent"]
-    last = int(m["ym"].max()) if len(m) else 0
-    start = (_ym_to_date(pd.Series([last])).iloc[0] - pd.DateOffset(months=months - 1)) if last else None
-    return m[_ym_to_date(m["ym"]) >= start] if start is not None else m.iloc[0:0]
+    last = last_month(t, as_of)
+    if not last:
+        return m.iloc[0:0]
+    start = _ym_to_date(pd.Series([last])).iloc[0] - pd.DateOffset(months=months - 1)
+    return m[(m["ym"] <= last) & (_ym_to_date(m["ym"]) >= start)]
 
 
 def pressure_over_permit(t: dict, as_of: pd.Timestamp, months: int = 24, tolerance: int = 100) -> pd.DataFrame:
@@ -130,7 +142,7 @@ def pressure_over_permit(t: dict, as_of: pd.Timestamp, months: int = 24, toleran
     w = t["wells"]
     lim = w[in_service(w)][["uic"]].assign(limit=w[["max_psi", "max_psi_2"]].max(axis=1))
     lim = lim[lim["limit"] > 0]
-    m = _recent(t, months).merge(lim, on="uic")
+    m = _recent(t, months, as_of).merge(lim, on="uic")
     m = m[m["max_psi"] > m["limit"] + tolerance]
     if m.empty:
         return _out(w, m, "pressure_over_permit")
@@ -146,7 +158,7 @@ def pressure_over_permit(t: dict, as_of: pd.Timestamp, months: int = 24, toleran
 def volume_over_permit(t: dict, as_of: pd.Timestamp, months: int = 24) -> pd.DataFrame:
     w = t["wells"]
     lim = w[in_service(w) & ((w["max_bbl_day"] > 0) | (w["max_mcf_day"] > 0))][["uic", "max_bbl_day", "max_mcf_day"]]
-    m = _recent(t, months).merge(lim, on="uic")
+    m = _recent(t, months, as_of).merge(lim, on="uic")
     days = _ym_to_date(m["ym"]).dt.days_in_month
     over_bbl = (m["max_bbl_day"] > 0) & (m["bbl"] > m["max_bbl_day"] * days)
     over_mcf = (m["max_mcf_day"] > 0) & (m["mcf"] > m["max_mcf_day"] * days)
@@ -168,7 +180,7 @@ def volume_over_permit(t: dict, as_of: pd.Timestamp, months: int = 24) -> pd.Dat
 def injecting_without_completion(t: dict, as_of: pd.Timestamp, months: int = 24) -> pd.DataFrame:
     w = t["wells"]
     no = w[in_service(w) & w["w2g1_date"].isna()][["uic"]]
-    m = _recent(t, months)
+    m = _recent(t, months, as_of)
     m = m[(m["bbl"] > 0) | (m["mcf"] > 0)].merge(no, on="uic")
     if m.empty:
         return _out(w, m, "injecting_without_completion")
@@ -183,7 +195,7 @@ def injecting_after_end(t: dict, as_of: pd.Timestamp, months: int = 24) -> pd.Da
     w = t["wells"]
     ended = w[w["cancelled"].notna() | w["w3_date"].notna()][["uic", "cancelled", "w3_date"]].copy()
     ended["end"] = ended[["cancelled", "w3_date"]].min(axis=1)
-    m = _recent(t, months)
+    m = _recent(t, months, as_of)
     m = m[(m["bbl"] > 0) | (m["mcf"] > 0)].merge(ended, on="uic")
     m = m[_ym_to_date(m["ym"]) > m["end"]]
     if m.empty:
@@ -197,7 +209,7 @@ def injecting_after_end(t: dict, as_of: pd.Timestamp, months: int = 24) -> pd.Da
 
 def no_recent_h10(t: dict, as_of: pd.Timestamp, years: int = 2) -> pd.DataFrame:
     w = t["wells"]
-    latest_year = int(t["h10_recent"]["ym"].max()) // 100 if len(t["h10_recent"]) else as_of.year
+    latest_year = (last_month(t, as_of) // 100) or as_of.year
     cutoff = (latest_year - years) * 100 + 12
     d = w[in_service(w) & w["activated"] & w["w2g1_date"].notna() & w["uic_class"].eq("2")
           & (w["last_h10_ym"].isna() | (w["last_h10_ym"] <= cutoff))].copy()

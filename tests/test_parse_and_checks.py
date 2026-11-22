@@ -76,3 +76,12 @@ def test_screens():
 def test_recent_start():
     assert recent_start(202609) == 202310
     assert recent_start(202601, 1) == 202601
+
+
+def test_checks_stop_at_file_date():
+    import pandas as pd
+    from uicpublic import checks
+    t = {"h10_recent": pd.DataFrame({"ym": [202608, 202609, 202610, 202611]})}
+    assert checks.last_month(t, pd.Timestamp("2026-10-31")) == 202610  # October ended on the file date
+    assert checks.last_month(t, pd.Timestamp("2026-10-15")) == 202609  # October not over yet
+    assert checks.last_month(t, pd.Timestamp("2026-08-01")) == 0       # nothing on file that early
