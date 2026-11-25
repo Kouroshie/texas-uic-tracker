@@ -1,0 +1,39 @@
+name: Keep the app awake
+
+# Streamlit Community Cloud puts an app to sleep after 12 hours with no visitors. This opens the app in a
+# headless browser every 4 hours (and wakes it if it is already asleep), so it never reaches 12 hours.
+# The monthly data build commits to the repository, which stops GitHub from turning this schedule off.
+
+on:
+  schedule:
+    - cron: "23 */4 * * *"   # every 4 hours, at 23 minutes past (GitHub delays runs on the hour)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-awake
+  cancel-in-progress: true
+
+jobs:
+  visit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install playwright && python -m playwright install --with-deps chromium
+      - name: Visit the app
+        run: python .github/scripts/keep_awake.py
+        env:
+          APP_URL: https://kouroshie-texas-uic-tracker-app-1zchb4.streamlit.app/
+      - name: Save a screenshot if the app did not load
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: keep-awake-screenshot
+          path: keep-awake.png
+          if-no-files-found: ignore
